@@ -1,0 +1,63 @@
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: 'gitlab.example.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |      
+        external_url 'https://gitlab.example.com'
+        registry_external_url 'https://gitlab.example.com:4567'        
+        gitlab_kas['enable'] = true
+        # Habilita Agente Kubernates
+        # gitlab_kas['gitlab_address'] = 'https://gitlab.example.com'
+        # registry_nginx['ssl_certificate'] = "./gitlab/config/ssl/gitlab.example.com.crt"
+        # registry_nginx['ssl_certificate_key'] = "./gitlab/config/ssl/gitlab.example.com.key"
+        # letsencrypt['enable'] = false
+        # Add any other gitlab.rb configuration here, each on its own line
+      # OWN_PRIVATE_API_URL: kas.gitlab.example.com
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22:22'
+      - '4567:4567'
+      - '8153:8153'
+      - '8150:8150'
+      - '8151:8151'
+    volumes:
+      - './gitlab/config:/etc/gitlab'
+      - './gitlab/logs:/var/log/gitlab'
+      - './gitlab/data:/var/opt/gitlab'          
+      - './gitlab/gitlab.yml:/home/git/gitlab/config/gitlab.yml'    
+  gitlab-runner:
+    image: 'gitlab/gitlab-runner:alpine'
+    restart: always
+    depends_on:
+      - gitlab   
+    volumes: 
+      - './gitlab-runner:/etc/gitlab-runner'
+      # - './gitlab/config/ssl/gitlab.example.com.crt:/etc/gitlab-runner/certs/ca.crt'
+      - './gitlab/config/ssl:/etc/gitlab-runner/certs'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    extra_hosts:
+     - "gitlab.example.com:10.24.136.153"
+
+  rancher:
+    image: rancher/rancher:latest
+    restart: unless-stopped
+    container_name: rancher-server
+    privileged: true
+    ports:
+      - 8080:80
+      - 8443:443
+      - 2222:22
+    extra_hosts:
+      - gitlab.example.com:10.24.136.153
+    environment:
+      CATTLE_BOOTSTRAP_PASSWORD: Rancher@123
+      SSL_CERT_DIR: /etc/gitlab/ssl
+    volumes:
+     - './rancher:/var/lib/rancher'
+     - './gitlab/config/ssl/gitlab.example.com.crt:/usr/local/share/ca-certificates/gitlab.example.com.crt'
+     #/var/lib/rancher/etc/ssl/ca.crt'
+     - './gitlab/config/ssl:/etc/gitlab/ssl'
+    command: sh -c "--set additionalTrustedCAs=true --insecure-registry=gitlab.example.com && update-ca-certificates"
