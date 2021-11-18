@@ -1,3 +1,7 @@
+gitlab/config/trusted-certs/*
+gitlab/config/ssh_*
+gitlab/data/*
+gitlab/logs/*
 gitlab-runner/*
 rancher/*
 registry/*
