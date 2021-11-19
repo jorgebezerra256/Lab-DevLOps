@@ -2,6 +2,7 @@ gitlab/config/trusted-certs/*
 gitlab/config/ssh_*
 gitlab/config/gitlab*
 gitlab/config/ssl/*.0
+gitlab/config/ssl/*
 gitlab/data/*
 gitlab/logs/*
 gitlab-runner/*
